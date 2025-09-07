@@ -1,0 +1,5 @@
+database:
+  dsn: "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable"
+ingestion:
+  tmp_dir: "./tmp"
+  batch_size: 20000

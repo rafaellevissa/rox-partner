@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: b3-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - b3_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ingestor:
+    build:
+      context: .
+      target: ingestor-builder
+    container_name: b3-ingestor
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./data:/data
+      - ./configs/config.yaml:/app/config.yaml:ro
+    command: ["./b3-ingestor", "ingest", "/data"]
+
+  api:
+    build:
+      context: .
+      target: api-builder
+    container_name: b3-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./configs/config.yaml:/app/config.yaml:ro
+    ports:
+      - "8080:8080"
+    command: ["./b3-api"]
+
+volumes:
+  b3_pgdata:
