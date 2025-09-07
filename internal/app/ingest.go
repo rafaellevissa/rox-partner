@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/rafaellevissa/rox-partner/internal/db"
+	"github.com/rafaellevissa/rox-partner/internal/domain"
 	"github.com/rafaellevissa/rox-partner/internal/parser"
 	"github.com/rafaellevissa/rox-partner/internal/unzip"
 	"github.com/rafaellevissa/rox-partner/pkg/logger"
@@ -104,25 +105,24 @@ func IngestTrades(dsn string, path string, tmpDir string, batchSize int) error {
 
 func processCSV(f string, dbConn *sql.DB, batchSize int, l *logger.Logger) {
 	l.Infof("parsing %s", f)
-	trades, err := parser.ParseCSV(f)
+
+	err := parser.ParseCSVStream(f, batchSize, func(trades []domain.Trade) error {
+		if err := db.InsertTradesBulk(dbConn, trades); err != nil {
+			l.Errorf("insert batch: %v", err)
+			return err
+		}
+
+		l.Infof("inserted batch of %d trades", len(trades))
+		return nil
+	})
 	if err != nil {
 		l.Errorf("parse %s: %v", f, err)
 		return
 	}
 
-	for i := 0; i < len(trades); i += batchSize {
-		end := i + batchSize
-		if end > len(trades) {
-			end = len(trades)
-		}
-		batch := trades[i:end]
-
-		if err := db.InsertTradesBulk(dbConn, batch); err != nil {
-			l.Errorf("insert batch: %v", err)
-		} else {
-			l.Infof("inserted batch %d..%d", i, end)
-		}
+	if err := os.Remove(f); err != nil {
+		l.Errorf("failed to remove %s: %v", f, err)
+	} else {
+		l.Infof("removed file %s", f)
 	}
-
-	_ = os.Remove(f)
 }
