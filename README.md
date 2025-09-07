@@ -11,32 +11,24 @@ Main features:
 
 ### 0. Place ZIP files
 
-Before running `docker-compose up`, place all ZIP files in the `data` directory at the root of the project.
+Before running `docker compose up`, place all ZIP files in the `data` directory at the root of the project.
 
 ### 1. Using Docker Compose
 
 ```bash
-docker compose up --build -d
+docker compose up --build
 ```
 
 * The `postgres` container initializes the database.
 * The `b3-ingestor` container can run data ingestion or the API.
 
----
-
-### 2. Ingest ZIP files (CLI)
-
-```bash
-docker compose run --rm ingestor ingest /data --config /app/config.yaml
-```
-
 Batch size and temporary directory options are read from `config.yaml`.
 
 ---
 
-### 3. Run the REST API
+### 2. Run the REST API
 
-After running `docker-compose up`, the API should be available at `http://localhost:8080`.
+After running `docker compose up`, the API should be available at `http://localhost:8080`.
 
 #### Endpoint:
 
